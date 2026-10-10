@@ -34,15 +34,15 @@ class IOData:
     def __init__(self, features, targets):
         self.features = features
         self.targets = targets
-        self.X = self.features.to_numpy()
-        self.y = self.targets.to_numpy()
-        self.Xe = np.column_stack([np.ones(self.X.shape[0]), self.X])
+        self.to_matrices()
 
     def __repr__(self):
         return f"Features: {self.features}\nTargets: {self.targets}"
 
     def to_matrices(self):
-        pass
+        self.X = self.features.to_numpy()
+        self.y = self.targets.to_numpy()
+        self.Xe = np.column_stack([np.ones(self.X.shape[0]), self.X])
 
 
 class ModelData:
