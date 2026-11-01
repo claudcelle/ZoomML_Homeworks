@@ -154,7 +154,7 @@ docker run --rm -p 9696:9696 zoomcamp-model:2026-hw5
 
 Which Python base-image tag is declared in the Dockerfile?
 
-- [ ] `python:3.9-slim-bullseye`
+- [ ] s`python:3.9-slim-bullseye`
 - [ ] `python:3.11.15-slim-bookworm`
 - [ ] `python:3.12-slim-bookworm`
 - [ ] `python:3.13.10-slim-bookworm`

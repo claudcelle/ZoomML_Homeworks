@@ -1,21 +1,33 @@
 """Dataset splitting and containers for features, targets and model splits."""
 
 import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 
-def split_dataset_train_val_test(df, seed=42, pct=0.2):
-    n = len(df)
-    n_val = int(n * pct)
-    n_test = int(n * pct)
-    n_train = n - n_val - n_test
+# def split_dataset_train_val_test(df, seed=42, pct=0.2):
+#     n = len(df)
+#     n_val = int(n * pct)
+#     n_test = int(n * pct)
+#     n_train = n - n_val - n_test
 
-    np.random.seed(seed)
-    idx = np.arange(n)
-    np.random.shuffle(idx)
+#     np.random.seed(seed)
+#     idx = np.arange(n)
+#     np.random.shuffle(idx)
 
-    df_train = df.iloc[idx[:n_train]].reset_index(drop=True)
-    df_val = df.iloc[idx[n_train:n_train + n_val]].reset_index(drop=True)
-    df_test = df.iloc[idx[n_train + n_val:]].reset_index(drop=True)
+#     df_train = df.iloc[idx[:n_train]].reset_index(drop=True)
+#     df_val = df.iloc[idx[n_train:n_train + n_val]].reset_index(drop=True)
+#     df_test = df.iloc[idx[n_train + n_val:]].reset_index(drop=True)
+
+#     return df_train, df_val, df_test
+
+def split_dataset_train_val_test(df, random_state=42, test_size=0.2, proportion = 'equal')-> tuple[pd.DataFrame]:
+
+    if proportion == 'equal':
+        df_full_train, df_test = train_test_split(df, test_size=test_size, random_state=random_state)
+        test_size = (test_size)/(1-test_size)
+        df_train, df_val = train_test_split(df_full_train, test_size=test_size, random_state=random_state)
+
 
     return df_train, df_val, df_test
 
@@ -34,7 +46,7 @@ class IOData:
     def __init__(self, features, targets):
         self.features = features
         self.targets = targets
-        self.to_matrices()
+        # self.to_matrices()
 
     def __repr__(self):
         return f"Features: {self.features}\nTargets: {self.targets}"
@@ -51,19 +63,44 @@ class ModelData:
         self.val = val
         self.test = test
 
+    def vectorize(self, *, sparse=True, fill_value=0):
+        from sklearn.feature_extraction import DictVectorizer
+
+        dv = DictVectorizer(sparse=sparse)
+
+        train_dicts = (
+            self.train.features
+            .fillna(fill_value)
+            .to_dict(orient="records")
+        )
+        self.train.X = dv.fit_transform(train_dicts)
+
+        for split in (self.val, self.test):
+            records = (
+                split.features
+                .fillna(fill_value)
+                .to_dict(orient="records")
+            )
+            split.X = dv.transform(records)
+
+        for split in (self.train, self.val, self.test):
+            split.y = split.targets.to_numpy()
+
+        return dv
+
     @classmethod
     def from_dataframe(
         cls,
         df,
         target_columns: list[str],
         training_columns: list[str] | None = None,
-        seed: int = 42,
-        pct: float = 0.2,
+        random_state: int = 42,
+        test_size: float = 0.2,
     ):
-        if not 0 < pct < 0.5:
-            raise ValueError("pct deve essere tra 0 e 0.5 esclusi")
+        if not 0 < test_size < 0.5:
+            raise ValueError("test_size deve essere tra 0 e 0.5 esclusi")
 
-        splits = split_dataset_train_val_test(df, seed=seed, pct=pct)
+        splits = split_dataset_train_val_test(df, random_state=random_state, test_size=test_size)
 
         train, val, test = (
             split_feature_target_columns(
